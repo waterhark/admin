@@ -30,20 +30,4 @@ class User extends BaseModel
         return $table;
     }
 
-    public function check_password($account, $password) //: bool
-    {
-        $res = $this->where("account", $account)->get();
-        $password_sql = $res->password;
-        $admin_id = $res->adminId;
-        
-        if (md5($password) == $password_sql) {
-
-            return $admin_id;
-
-        } else {
-
-            return null;
-
-        }
-    }
 }
