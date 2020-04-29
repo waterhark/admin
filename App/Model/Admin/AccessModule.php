@@ -23,9 +23,10 @@ class AccessModule extends BaseModel
     {
         $table = new Table($this->tableName);
         $table->colInt('accessId')->setIsUnique()->setIsAutoIncrement()->setIsPrimaryKey();
-        $table->colInt('adminId')->setIsNotNull();
-        $table->colInt('moduleId')->setIsNotNull();
-        $table->colInt('accessHash')->setIsNotNull()->setIsUnique();
+        $table->colInt('adminId')->setIsNotNull()->setColumnComment("管理员id");
+        $table->colVarChar("moduleCode",40)->setIsNotNull()->setColumnComment("模块code");
+        $table->colVarChar('actionCode',40)->setIsNotNull()->setColumnComment("功能权限code");
+        $table->colVarChar('accessHash')->setIsNotNull()->setIsUnique()->setColumnComment("hash(adminId+moduleCode+actionCode)");
         $table->setIfNotExists();
         return $table;
     }

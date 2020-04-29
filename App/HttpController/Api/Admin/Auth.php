@@ -5,6 +5,9 @@
 
     use EasySwoole\Http\Message\Status;
     use \App\Model\Admin\User;
+    use EasySwoole\HttpAnnotation\AnnotationTag\Method;
+    use EasySwoole\HttpAnnotation\AnnotationTag\Param;
+    use EasySwoole\Session\Session;
 
     class Auth extends AbstractBase
     {
@@ -17,42 +20,36 @@
             return 'auth';
         }
 
+        /**
+         * @Method(allow={POST,GET})
+         * @Param(name="account",from={GET,POST},notEmpty="账号没有填写")
+         * @Param(name="password",from={GET,POST},notEmpty="密码没有填写")
+         * @return bool|null
+         * @throws \EasySwoole\Mysqli\Exception\Exception
+         * @throws \EasySwoole\ORM\Exception\Exception
+         * @throws \Throwable
+         */
         public function login(): ?bool
         {
             $request = $this->request();
             $data = $request->getRequestParam();
-            // 没有输入账号则报错
-            if (!$data['account']) {
-                $this->writeJson(Status::CODE_BAD_REQUEST, [
-                    'errorCode' => -2
-                ], '没输入账号');
-                return false;
-            }
-            // 没有输入密码则报错
-            if (!$data['password']) {
-                $this->writeJson(Status::CODE_BAD_REQUEST, [
-                    'errorCode' => -1
-                ], '没输入密码');
-                return false;
-            }
             //实例化User
-            $admin_model = User::create();
-            $res = $admin_model->where("account", $data['account'])->get();
-            $password_sql = $res->password;
-            $admin_id = $res->adminId;
+            $adminModel = User::create();
+            $res = $adminModel->where("account", $data['account'])->get();
+            $passwordSql = $res->password;
+            $adminId = $res->adminId;
             //如果密码不对则管理员ID为NULL
-            if (md5($data['password']) != $password_sql) {
-                $admin_id = null;
+            if (md5($data['password']) != $passwordSql) {
+                $adminId = null;
             }
             // 如果密码账号没错则设置登录状态
-//        $admin_id = $this->checkPassword($admin_model,$data['account'],$data['password']);
-
-            if ($admin_id) {
-                $hashSession = md5(microtime(true) . $admin_id);
-                $admin_model->update(['session' => $hashSession], ['adminId' => $admin_id]);
-                $this->response()->setCookie('adminSession', $hashSession, time() + 3600, '/');
-                $admin_info = ["admin_id" => $admin_id, "admin_account" => $data['account']];
-                $this->writeJson(Status::CODE_OK, $admin_info, "login successed!");
+            if ($adminId) {
+                $hashSession = md5(microtime(true) . $adminId);
+                $adminModel->update(['session' => $hashSession], ['adminId' => $adminId]);
+                Session::getInstance()->set(static::ADMIN_COOKIE_NAME, $hashSession);
+                $this->response()->setCookie(static::ADMIN_COOKIE_NAME, $hashSession, time() + 3600, '/');
+                $adminInfo = ["admin_id" => $adminId, "admin_account" => $data['account']];
+                $this->writeJson(Status::CODE_OK, $adminInfo, "login successed!");
             } else {
                 $this->writeJson(Status::CODE_BAD_REQUEST, [
                     'errorCode' => -1
