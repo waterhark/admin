@@ -3,11 +3,13 @@
 
     namespace App\HttpController\Api\Admin;
 
+
     use EasySwoole\Http\Message\Status;
     use \App\Model\Admin\User;
     use EasySwoole\HttpAnnotation\AnnotationTag\Method;
     use EasySwoole\HttpAnnotation\AnnotationTag\Param;
     use EasySwoole\Session\Session;
+    use App\Validate\Admin\UserValidate;
 
     class Auth extends AbstractBase
     {
@@ -20,6 +22,29 @@
         {
             return 'auth';
         }
+
+        public function register()
+        {
+            $params = $this->paramsValidate(new UserValidate);
+            if ($params === false) {
+                return false;
+            }
+            $userModel = new User();
+
+            $userInfo = $userModel->get(['account' => $params['account']]);
+            if ($userInfo) {
+                return $this->error('帐号已存在');
+            }
+
+            $userModel->account = $params['account'];
+            $userModel->password = md5($params['password']);
+            if (!$userModel->save()) {
+                return $this->error('帐号注册失败');
+            }
+
+            return $this->success([], '帐号注册成功');
+        }
+
 
         /**
          * @Method(allow={POST,GET})
