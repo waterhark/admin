@@ -9,6 +9,7 @@
     use App\Model\Admin\Module;
     use App\Model\Admin\User;
     use EasySwoole\Http\Message\Status;
+    use EasySwoole\Session\Session;
 
     abstract class AbstractBase extends ApiBase
     {
@@ -17,6 +18,7 @@
         protected $acl;
 
         const ADMIN_COOKIE_NAME = 'admin_session';
+
         const NO_MODULE = -2;
         const NO_ACCESS_MODULE = -1;
         const HAVE_ACCESS_MODULE = 1;
@@ -91,5 +93,22 @@
             }
 
             return self::NO_ACCESS_MODULE;
+        }
+
+//        功能模块权限判断
+        protected function actionPrivilege(string $action): ?bool
+        {
+            $session = Session::getInstance()->get('admin_session');
+
+            $adminId = User::create()->where("session", $session)->get()->adminId;
+            $result = AccessModule::create()->where("actionCode", $action)->where("adminId", $adminId)->count();
+            if ($result) {
+                return true;
+            }
+            $this->writeJson(Status::CODE_UNAUTHORIZED, [
+                'errorCode' => -1,
+            ], '没有此功能权限');
+            $this->response()->end();
+            return false;
         }
     }
