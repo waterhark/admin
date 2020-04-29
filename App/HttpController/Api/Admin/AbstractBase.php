@@ -17,6 +17,9 @@
         protected $acl;
 
         const ADMIN_COOKIE_NAME = 'admin_session';
+        const NO_MODULE = -2;
+        const NO_ACCESS_MODULE = -1;
+        const HAVE_ACCESS_MODULE = 1;
 
         abstract protected function moduleName(): string;
 
@@ -36,17 +39,17 @@
             }
             $acl = $this->adminAcl();
             switch ($acl) {
-                case -1:
+                case self::NO_MODULE:
                     $this->writeJson(Status::CODE_UNAUTHORIZED, [
-                        'errorCode' => -1
+                        'errorCode' => self::NO_MODULE
                     ], '此模块没有注册');
                     return false;
-                case -2:
+                case self::NO_ACCESS_MODULE:
                     $this->writeJson(Status::CODE_UNAUTHORIZED, [
-                        'errorCode' => -2
+                        'errorCode' => self::NO_ACCESS_MODULE
                     ], '您没有此模块权限');
                     return false;
-                case 1:
+                case self::HAVE_ACCESS_MODULE:
                     return true;
                 default:
                     $this->writeJson(Status::CODE_UNAUTHORIZED, [
@@ -74,22 +77,19 @@
 
         protected function adminAcl(): ?int
         {
-            $noModule = -1;
-            $haveAccess = -2;
-
             $moduleCode = $this->moduleName();
 //            查询模块是否存在，不存在则报错
             $result = Module::create()->where('moduleCode', $moduleCode)->count();
             if ($result <= 0) {
-                return $noModule;
+                return self::NO_MODULE;
             }
             //查询用户是否有这个模块的权限
             $ret = AccessModule::create()->where('adminId', $this->who()->adminId)->where('moduleCode',
                 $moduleCode)->count();
             if ($ret > 0) {
-                $haveAccess = 1;
+                return self::HAVE_ACCESS_MODULE;
             }
 
-            return $haveAccess;
+            return self::NO_ACCESS_MODULE;
         }
     }
