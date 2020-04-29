@@ -12,7 +12,8 @@
     class Auth extends AbstractBase
     {
         protected $noneAuthAction = [
-            'login'
+            'login',
+            'logout'
         ];
 
         protected function moduleName(): string
@@ -61,6 +62,9 @@
 
         public function logout()
         {
-
+            Session::getInstance()->del(self::ADMIN_COOKIE_NAME);
+            $this->response()->setCookie(static::ADMIN_COOKIE_NAME, '', time() - 3600, '/');
+            $this->writeJson(Status::CODE_OK, '', "login out successed!");
+            return true;
         }
     }
